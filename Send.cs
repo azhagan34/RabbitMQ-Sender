@@ -4,6 +4,7 @@ using System.Text;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using Newtonsoft.Json;
 
 namespace Send
 {
@@ -15,13 +16,17 @@ namespace Send
             using (var connection = factory.CreateConnection())
             using (var channel = connection.CreateModel())
             {
-                channel.QueueDeclare(queue: "hello1",
-                                     durable: true,
-                                     exclusive: false,
-                                     autoDelete: false,
-                                     arguments: null
-                                     );
-                channel.ConfirmSelect();
+                //channel.ExchangeDeclare("pipes", ExchangeType.Fanout);
+                channel.ExchangeDeclare("pipes_direct", type: "direct");
+                //channel.QueueDeclare(queue: "hello1",
+                //                     durable: true,
+                //                     exclusive: false,
+                //                     autoDelete: false,
+                //                     arguments: null
+                //                     );
+
+
+                //channel.ConfirmSelect();
                 List<RequestQ> lstrequ = new List<RequestQ>();
                 for(int i=1; i<10; i++)
                 {
@@ -33,16 +38,18 @@ namespace Send
                     };
                     lstrequ.Add(reqstQ);
                 }
-                var message = JsonSerializer.Serialize<List<RequestQ>>(lstrequ); 
+                var message = JsonConvert.SerializeObject(lstrequ);
                 var body = Encoding.UTF8.GetBytes(message);
+
+
                 var properties = channel.CreateBasicProperties();
                 properties.Persistent = true;
-                channel.BasicPublish(exchange: "",
-                                     routingKey: "hello1",
-                                     basicProperties: properties,
+                channel.BasicPublish(exchange: "pipes_direct",
+                                     routingKey: "both",
+                                     basicProperties: null,
                                      body: body);
-               
-                Console.WriteLine(" [x] Sent {0}", message);
+                
+                 Console.WriteLine(" [x] Sent {0}", message);
             }
 
             Console.WriteLine(" Press [enter] to exit.");
